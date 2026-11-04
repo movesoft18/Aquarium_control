@@ -320,40 +320,63 @@ class ApiClient:
 # ---------------------------------------------------------------------------
 # Применение команды к внутреннему состоянию устройств.
 #
+# Сервер отдаёт команду в плоском виде (command.serialize):
+#   {
+#     "id": 5,
+#     "device_id": 10,
+#     "internal_device_id": 1,
+#     "type": "switch",
+#     "state": 1,
+#     "status": "pending",
+#     "created_at": "...",
+#     "executed_at": null
+#   }
+#
+# Поэтому поля читаются из корня команды, а не из вложенного payload.
 # В минимальной версии поддерживается только type == "switch".
-# Возвращает кортеж (успех, результат), где результат — словарь для
+# Возвращает кортеж (успех, результат), где результат - словарь для
 # подтверждения или описание ошибки.
 # ---------------------------------------------------------------------------
 def apply_command(command: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
+    # Тип команды: в минимальной версии только "switch".
     cmd_type = command.get("type")
-    payload = command.get("payload") or {}
+
+    # ID внутреннего устройства контроллера (0, 1, 2).
+    # Лежит в корне команды - так его отдаёт сервер.
+    device_id = command.get("internal_device_id")
+
+    # Целевое состояние для switch: 0 (выключить) или 1 (включить).
+    state = command.get("state")
 
     if cmd_type == "switch":
-        device_id = payload.get("device_id")
-        state = payload.get("state")
-
-        # Проверка: устройство существует.
+        # Проверка: устройство существует в модели контроллера.
+        # Если id неизвестен, команду выполнить нельзя.
         if device_id not in devices_data:
             return False, {"error": f"device {device_id} not found"}
 
         device = devices_data[device_id]
 
-        # Проверка: устройство — switch (датчик переключать нельзя).
+        # Проверка: устройство - switch. Датчик (sensor) переключать нельзя,
+        # даже если команда пришла с type="switch".
         if device["type"] != "switch":
             return False, {"error": f"device {device_id} is not a switch"}
 
-        # Проверка: допустимое состояние.
+        # Проверка: допустимое состояние. Защита от некорректных значений,
+        # если серверная валидация когда-нибудь пропустит такое.
         if state not in (0, 1):
             return False, {"error": "state must be 0 or 1"}
 
         # Применяем: меняем состояние внутреннего устройства.
+        # Для Air pump (id=0) и Light (id=1) status - это 0/1.
         device["status"] = state
         log.info("Устройство %s (%s) переключено в %s", device_id, device["name"], state)
+
+        # Возвращаем успех и детали для подтверждения.
         return True, {"device_id": device_id, "status": state}
 
     # Неизвестный тип команды: в минимальной версии не поддерживается.
+    # Такая команда помечается failed при подтверждении.
     return False, {"error": f"unknown command type: {cmd_type}"}
-
 
 # ---------------------------------------------------------------------------
 # Основной цикл.

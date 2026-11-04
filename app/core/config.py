@@ -10,7 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # Подключение к MySQL через PyMySQL
-    database_url: str = "mysql+pymysql://aqua:aqua@localhost:3306/aquarium"
+    database_url: str = "mysql+pymysql://root:@localhost:3306/aquarium"
 
     # JWT
     jwt_secret: str = "change-me"

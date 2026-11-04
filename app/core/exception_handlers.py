@@ -24,9 +24,22 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.errors import (
     AppError,
-    ERROR_INTERNAL,
+    ERROR_CREDENTIALS,
+    ERROR_FORBIDDEN,
+    ERROR_NOT_FOUND,
+    ERROR_CONFLICT,
     ERROR_VALIDATION,
+    ERROR_INTERNAL,
 )
+
+_HTTP_TO_ERROR = {
+    401: ERROR_CREDENTIALS,
+    403: ERROR_FORBIDDEN,
+    404: ERROR_NOT_FOUND,
+    409: ERROR_CONFLICT,
+    422: ERROR_VALIDATION,
+}
+
 from app.core.responses import error_body
 
 log = logging.getLogger("app.errors")
@@ -68,11 +81,10 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(StarletteHTTPException)
     async def handle_http(request: Request, exc: StarletteHTTPException) -> JSONResponse:
-        # Приводим HTTPException к общему формату.
-        # Код ошибки по умолчанию — 1008, если не задан явно.
+        error = _HTTP_TO_ERROR.get(exc.status_code, ERROR_INTERNAL)
         return JSONResponse(
             status_code=exc.status_code,
-            content=error_body(ERROR_INTERNAL, str(exc.detail), None),
+            content=error_body(error, str(exc.detail), None),
         )
 
     @app.exception_handler(Exception)

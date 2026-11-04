@@ -35,11 +35,11 @@ def create_app() -> FastAPI:
         return ok({"status": "healthy"})
 
     # Роуты подключаются по мере реализации:
-    # from app.api.v1 import auth, devices, telemetry, commands
-    # app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
-    # app.include_router(devices.router, prefix="/api/v1/devices", tags=["devices"])
-    # app.include_router(telemetry.router, prefix="/api/v1", tags=["telemetry"])
-    # app.include_router(commands.router, prefix="/api/v1", tags=["commands"])
+    from app.api.v1 import auth, devices, telemetry, commands
+    app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+    app.include_router(devices.router, prefix="/api/v1/devices", tags=["devices"])
+    app.include_router(telemetry.router, prefix="/api/v1", tags=["telemetry"])
+    app.include_router(commands.router, prefix="/api/v1", tags=["commands"])
 
     return app
 
