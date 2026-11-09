@@ -27,4 +27,7 @@ class DeviceData(BaseModel):
     # last_seen_at пустой, пока контроллер не отправил телеметрию.
     last_seen_at: str | None = None
     created_at: str
-    
+
+class DeviceListData(BaseModel):
+    """Обёртка для списка контроллеров."""
+    items: list[DeviceData]

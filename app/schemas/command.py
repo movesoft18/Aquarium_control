@@ -44,4 +44,13 @@ class CommandAckRequest(BaseModel):
     result: необязательные детали выполнения (пишутся в лог).
     """
     status: Literal["done", "failed"]
-    result: dict | None = None
+
+class CommandListData(BaseModel):
+    """Обёртка для списка ожидающих команд."""
+    items: list[CommandData]
+
+class CommandAckData(BaseModel):
+    """Результат подтверждения команды."""
+    id: int
+    status: str
+    executed_at: str | None = None

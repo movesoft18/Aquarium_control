@@ -14,14 +14,31 @@ from app.core.responses import ok
 from app.db.session import get_db
 from app.models.device import Device
 from app.models.user import User
-from app.schemas.command import CommandAckRequest, CreateCommandRequest
+from app.schemas.command import (
+    CommandAckData,
+    CommandAckRequest,
+    CommandData,
+    CommandListData,
+    CreateCommandRequest,
+)
+from app.schemas.common import ApiResponse, ErrorResponse, ValidationErrorResponse
 from app.services import commands as commands_service
 
 
 router = APIRouter()
 
 
-@router.post("/devices/{device_id}/commands", status_code=201)
+@router.post(
+    "/devices/{device_id}/commands",
+    status_code=201,
+    response_model=ApiResponse[CommandData],
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid or missing JWT"},
+        403: {"model": ErrorResponse, "description": "Access denied"},
+        404: {"model": ErrorResponse, "description": "Device not found"},
+        422: {"model": ValidationErrorResponse, "description": "Not a switch or invalid state"},
+    },
+)
 def create_command(
     device_id: int,
     payload: CreateCommandRequest,
@@ -43,7 +60,14 @@ def create_command(
     return ok(command.serialize)
 
 
-@router.get("/devices/{device_id}/commands")
+@router.get(
+    "/devices/{device_id}/commands",
+    response_model=ApiResponse[CommandListData],
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid device key"},
+        403: {"model": ErrorResponse, "description": "Device mismatch"},
+    },
+)
 def list_pending_commands(
     device_id: int,
     db: Session = Depends(get_db),
@@ -61,7 +85,16 @@ def list_pending_commands(
     return ok({"items": [c.serialize for c in commands]})
 
 
-@router.patch("/commands/{command_id}")
+@router.patch(
+    "/commands/{command_id}",
+    response_model=ApiResponse[CommandAckData],
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid device key"},
+        403: {"model": ErrorResponse, "description": "Access denied"},
+        404: {"model": ErrorResponse, "description": "Command not found"},
+        422: {"model": ValidationErrorResponse, "description": "Invalid status"},
+    },
+)
 def ack_command(
     command_id: int,
     payload: CommandAckRequest,

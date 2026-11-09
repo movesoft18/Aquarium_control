@@ -26,3 +26,9 @@ class TokenData(BaseModel):
     """Данные успешного входа: JWT и тип токена."""
     access_token: str
     token_type: str = "bearer"
+
+class UserData(BaseModel):
+    """Пользователь в ответе на регистрацию."""
+    id: int
+    email: str
+    created_at: str    

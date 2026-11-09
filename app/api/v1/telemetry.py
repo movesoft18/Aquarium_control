@@ -13,14 +13,24 @@ from app.core.responses import ok
 from app.db.session import get_db
 from app.models.device import Device
 from app.models.user import User
-from app.schemas.telemetry import TelemetryRequest
+from app.schemas.common import ApiResponse, ErrorResponse, ValidationErrorResponse
+from app.schemas.telemetry import TelemetryData, TelemetryRequest, TelemetrySavedData
 from app.services import telemetry as telemetry_service
 
 
 router = APIRouter()
 
 
-@router.post("/telemetry", status_code=201)
+@router.post(
+    "/telemetry",
+    status_code=201,
+    response_model=ApiResponse[TelemetrySavedData],
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid device key"},
+        403: {"model": ErrorResponse, "description": "Device mismatch"},
+        422: {"model": ValidationErrorResponse, "description": "Validation error"},
+    },
+)
 def send_telemetry(
     payload: TelemetryRequest,
     db: Session = Depends(get_db),
@@ -39,7 +49,15 @@ def send_telemetry(
     return ok({"saved": saved})
 
 
-@router.get("/devices/{device_id}/telemetry/latest")
+@router.get(
+    "/devices/{device_id}/telemetry/latest",
+    response_model=ApiResponse[TelemetryData],
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid or missing JWT"},
+        403: {"model": ErrorResponse, "description": "Access denied"},
+        404: {"model": ErrorResponse, "description": "No telemetry yet"},
+    },
+)
 def get_latest_telemetry(
     device_id: int,
     db: Session = Depends(get_db),

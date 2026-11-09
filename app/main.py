@@ -15,6 +15,7 @@ from fastapi import FastAPI
 from app.core.config import settings
 from app.core.exception_handlers import register_exception_handlers
 from app.core.responses import ok
+from app.schemas.common import ApiResponse, HealthData
 
 
 def create_app() -> FastAPI:
@@ -29,7 +30,7 @@ def create_app() -> FastAPI:
     # Единый формат ошибок для всех исключений.
     register_exception_handlers(app)
 
-    @app.get("/health", tags=["service"])
+    @app.get("/health", response_model=ApiResponse[HealthData], tags=["service"])
     def health() -> dict:
         """Проверка живости приложения."""
         return ok({"status": "healthy"})

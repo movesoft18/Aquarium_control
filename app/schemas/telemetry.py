@@ -38,3 +38,7 @@ class TelemetryData(BaseModel):
     sensor: str
     value: float
     recorded_at: str
+
+class TelemetrySavedData(BaseModel):
+    """Результат приёма телеметрии."""
+    saved: int

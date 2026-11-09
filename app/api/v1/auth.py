@@ -10,14 +10,23 @@ from sqlalchemy.orm import Session
 
 from app.core.responses import ok
 from app.db.session import get_db
-from app.schemas.auth import LoginRequest, RegisterRequest
+from app.schemas.auth import LoginRequest, RegisterRequest, TokenData, UserData
 from app.services import auth as auth_service
+from app.schemas.common import ApiResponse, ErrorResponse, ValidationErrorResponse
 
 
 router = APIRouter()
 
 
-@router.post("/register", status_code=201)
+@router.post(
+    "/register",
+    status_code=201,
+    response_model=ApiResponse[UserData],
+    responses={
+        409: {"model": ErrorResponse, "description": "Email already registered"},
+        422: {"model": ValidationErrorResponse, "description": "Validation error"},
+    },
+)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> dict:
     """
     Регистрация пользователя.
@@ -29,7 +38,14 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> dict:
     return ok(user.serialize)
 
 
-@router.post("/login")
+@router.post(
+    "/login",
+    response_model=ApiResponse[TokenData],
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid credentials"},
+        422: {"model": ValidationErrorResponse, "description": "Validation error"},
+    },
+)
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> dict:
     """
     Вход.

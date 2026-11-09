@@ -11,14 +11,23 @@ from app.api.deps import get_current_user
 from app.core.responses import ok
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.device import CreateDeviceRequest
+from app.schemas.common import ApiResponse, ErrorResponse, ValidationErrorResponse
+from app.schemas.device import CreateDeviceRequest, DeviceCreatedData, DeviceListData
 from app.services import devices as devices_service
 
 
 router = APIRouter()
 
 
-@router.post("", status_code=201)
+@router.post(
+    "",
+    status_code=201,
+    response_model=ApiResponse[DeviceCreatedData],
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid or missing JWT"},
+        422: {"model": ValidationErrorResponse, "description": "Validation error"},
+    },
+)
 def create_device(
     payload: CreateDeviceRequest,
     db: Session = Depends(get_db),
@@ -41,7 +50,11 @@ def create_device(
     )
 
 
-@router.get("")
+@router.get(
+    "",
+    response_model=ApiResponse[DeviceListData],
+    responses={401: {"model": ErrorResponse, "description": "Invalid or missing JWT"}},
+)
 def list_devices(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
